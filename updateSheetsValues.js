@@ -1,19 +1,23 @@
 require('dotenv').config();
 
-function getSheetsValues(sheets, range, valueRenderOption = 'FORMATTED_VALUE') {
+function updateSheetsValues(sheets, range, values) {
   return new Promise((resolve, reject) => {
-    sheets.spreadsheets.values.get({
+    sheets.spreadsheets.values.update({
+      
       spreadsheetId: process.env.SPREAD_SHEET_ID,
       range,
-      valueRenderOption,
+      valueInputOption: 'USER_ENTERED',
+      resource: {
+        values,
+      }
     }, (err, res) => {
       if (err) {
         console.log('The API returned an error: ' + err)
         reject();
       };
-      resolve(res.data.values);
+      resolve(res);
     })
   })
 }
 
-module.exports = { getSheetsValues }
+module.exports = { updateSheetsValues }
