@@ -1,6 +1,7 @@
 require('dotenv').config();
 const {Telegraf} = require('telegraf');
 const { format } = require('date-fns');
+const express = require('express');
 
 const { checkAuth } = require('./auth');
 const { getSheetsValues } = require('./getSheetsValues');
@@ -17,7 +18,7 @@ bot.use(async (ctx, next) => {
 });
 
 async function replyTodayBalans(ctx) {
-  const rows = await getSheetsValues(ctx.sheets, 'G2:K32');
+  const rows = await getSheetsValues(ctx.sheets, 'G2:K35');
   const todayRow = rows.find(row => row[0] === format(new Date(), 'yyyy-MM-dd'));
   if (todayRow) {
     ctx.reply(`Сегодня можно ещё потратить: ${todayRow[4]} руб.`);
@@ -34,12 +35,15 @@ async function addExpense(ctx) {
     return;
   };
 
+  const rows = await getSheetsValues(ctx.sheets, 'G2:K35');
+  const todayRowIndex = rows.findIndex(row => row[0] === format(new Date(), 'yyyy-MM-dd'));
+
   const invertedMessage = message[0] === '+'
     ? `-${inputedNumber}`
     : `+${inputedNumber}`;
 
-  const date = new Date().getDate();
-  const range = `I${date + 1}`;
+  // const date = new Date().getDate();
+  const range = `I${todayRowIndex + 2}`;
   const currentValue = (await getSheetsValues(ctx.sheets, range, 'FORMULA'))?.[0][0];
 
   const newValue = currentValue
@@ -58,3 +62,10 @@ async function addExpense(ctx) {
 bot.command('todaybalance', replyTodayBalans);
 bot.on('text', addExpense);
 bot.launch();
+
+const app = express()
+const port = 8080
+
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+})
