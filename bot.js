@@ -61,7 +61,11 @@ async function addExpense(ctx) {
 
 bot.command('todaybalance', replyTodayBalans);
 bot.on('text', addExpense);
-bot.launch();
+bot.launch().then((res) => {
+  console.log('Bot running success.');
+}).catch((e) => {
+  console.log('Bot running failure.', e);
+});
 
 const app = express()
 const port = 8080
