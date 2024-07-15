@@ -11,6 +11,10 @@ function getSheetsValues(sheets, range, valueRenderOption = 'FORMATTED_VALUE') {
         console.log('The API returned an error: ' + err)
         reject();
       };
+      if (!res) {
+        console.log('[getSheetsValues]: No response data')
+        reject();
+      }
       resolve(res.data.values);
     })
   })
