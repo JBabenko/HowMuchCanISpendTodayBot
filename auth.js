@@ -1,95 +1,39 @@
 const fs = require('fs').promises;
 const path = require('path');
 const process = require('process');
-const readline = require('readline');
-const { authenticate } = require('@google-cloud/local-auth');
-const { google } = require('googleapis');
+const {GoogleAuth} = require('google-auth-library');
 
-// If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
-const TOKEN_PATH = path.join(process.cwd(), 'token.json');
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+
 const CREDENTIALS = {
-  installed:
-    {
-      client_id: process.env.G_CLIENT_ID ?? '',
-      project_id: "financesheets-341519",
-      auth_uri: "https://accounts.google.com/o/oauth2/auth",
-      token_uri: "https://oauth2.googleapis.com/token",
-      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-      client_secret: process.env.G_CLIENT_SECRET ?? '',
-      redirect_uris: ["http://localhost"]
-    }
-  }
+  "type": "service_account",
+  "project_id": "financesheets-341519",
+  "private_key_id": process.env.G_PRIVATE_KEY_ID,
+  "private_key": process.env.G_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  "client_email": "financesheets@financesheets-341519.iam.gserviceaccount.com",
+  "client_id": "101261184916591295180",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/financesheets%40financesheets-341519.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
 
 
 async function checkAuth() {
   try {
-    await fs.writeFile(CREDENTIALS_PATH, JSON.stringify(CREDENTIALS));
+    const auth = new GoogleAuth({
+      scopes: SCOPES,
+      credentials: CREDENTIALS
+    });
+    const client = await auth.getClient();
     // const content = await fs.readFile(CREDENTIALS_PATH);
-    const client = await authorize(CREDENTIALS);
+    // const client = await authorize(CREDENTIALS);
     return client;
   } catch (err) {
     console.error('Error loading client secret file:', err);
     throw err;
   }
-}
-
-/**
- * Reads previously authorized credentials from the save file.
- *
- * @return {Promise<OAuth2Client|null>}
- */
-async function loadSavedCredentialsIfExist() {
-  try {
-    const content = await fs.readFile(TOKEN_PATH);
-    const credentials = JSON.parse(content);
-    return google.auth.fromJSON(credentials);
-  } catch (err) {
-    return null;
-  }
-}
-
-/**
- * Serializes credentials to a file compatible with GoogleAuth.fromJSON.
- *
- * @param {OAuth2Client} client
- * @return {Promise<void>}
- */
-async function saveCredentials(client) {
-  const content = await fs.readFile(CREDENTIALS_PATH);
-  const keys = JSON.parse(content);
-  const key = keys.installed || keys.web;
-  const payload = JSON.stringify({
-    type: 'authorized_user',
-    client_id: key.client_id,
-    client_secret: key.client_secret,
-    refresh_token: client.credentials.refresh_token,
-  });
-  await fs.writeFile(TOKEN_PATH, payload);
-}
-
-/**
- * Load or request or authorization to call APIs.
- *
- */
-async function authorize(credentials) {
-  let client = await loadSavedCredentialsIfExist();
-  if (client) {
-    return client;
-  }
-
-  client = await authenticate({
-    scopes: SCOPES,
-    keyfilePath: CREDENTIALS_PATH,
-  });
-  if (client.credentials) {
-    await saveCredentials(client);
-  }
-  return client;
 }
 
 module.exports = { checkAuth }
